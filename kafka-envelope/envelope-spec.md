@@ -43,14 +43,14 @@ All CloudEvents attributes are transported in Kafka message headers with `ce_` p
 5. Message value MUST NOT contain technical metadata (tracing, correlation, governance)
 6. `type` MUST describe a domain event (created, assigned, released) — no entity-updates or snapshots
 7. Kafka messages MUST NOT be implicitly treated as events when they are entity-streams or snapshots
-8. `messagekey` SHOULD be derived from `subject` to guarantee ordering per entity
-9. `traceparent` MUST be propagated when a tracing context exists or can be created
+8. `traceparent` MUST be propagated when a tracing context exists or can be created
 
 ### SHOULD
 
 1. Set `correlationid` and propagate across system/service/topic boundaries
 2. Set `causationid` when a causing event is identifiable
 3. Version event types (e.g. `.v1`, `.v2`)
+4. `messagekey` SHOULD be derived from `subject` to guarantee ordering per entity
 
 ### MAY
 
