@@ -1,2 +1,6 @@
 .idea/
 .DS_Store
+examples/kafka/build
+examples/kafka/.kotlin
+examples/kafka/.gradle
+examples/kafka/.idea

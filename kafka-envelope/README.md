@@ -29,3 +29,7 @@ Or invoke explicitly by referencing "kafka-envelope" in your prompt.
 
 Based on ADR "Kafka Message Struktur" — CloudEvents-compatible envelope
 for Kafka messages with headers in binary content mode.
+
+## Examples
+
+Writing new Kafka consumer mit namen OderEvent Consumer der OrderEvents. Das Topic name ist "rlt.oders.events".
