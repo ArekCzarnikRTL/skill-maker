@@ -1,6 +1,6 @@
 .idea/
 .DS_Store
-examples/kafka/build
-examples/kafka/.kotlin
-examples/kafka/.gradle
-examples/kafka/.idea
+examples/kotlin-spring-kafka-skill-example/build
+examples/kotlin-spring-kafka-skill-example/.kotlin
+examples/kotlin-spring-kafka-skill-example/.gradle
+examples/kotlin-spring-kafka-skill-example/.idea
