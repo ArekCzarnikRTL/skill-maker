@@ -12,67 +12,54 @@ class OrderEventConsumer {
 
     private val log = LoggerFactory.getLogger(OrderEventConsumer::class.java)
 
-    @KafkaListener(topics = ["rlt.oders.events"], groupId = "\${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = ["rlt.orders.events"], groupId = "order-event-consumer")
     fun consume(record: ConsumerRecord<String, OrderEvent>) {
-        val envelope = extractEnvelope(record)
+        val headers = extractEnvelopeHeaders(record)
 
         log.info(
-            "Received event id={} type={} source={} traceparent={} key={}",
-            envelope.id, envelope.type, envelope.source, envelope.traceparent, record.key()
+            "Received OrderEvent: id={}, source={}, type={}, time={}, traceparent={}, key={}, orderId={}",
+            headers["ce_id"],
+            headers["ce_source"],
+            headers["ce_type"],
+            headers["ce_time"],
+            headers["ce_traceparent"],
+            record.key(),
+            record.value().orderId
         )
-        // Restore tracing context from ce_traceparent
-        // (integrate with your tracing library, e.g. Micrometer / OpenTelemetry)
-        // Idempotency check using ce_id
-        if (isDuplicate(envelope.id)) {
-            log.warn("Duplicate event id={}, skipping", envelope.id)
+
+        val ceId = headers["ce_id"]
+        if (ceId != null && isDuplicate(ceId)) {
+            log.warn("Duplicate event detected, skipping: ce_id={}", ceId)
             return
         }
 
-        val orderEvent = record.value()
-        handleOrderEvent(orderEvent, envelope)
+        processOrder(record.value(), headers)
     }
 
-    private fun handleOrderEvent(event: OrderEvent, envelope: CloudEventEnvelope) {
+    private fun processOrder(order: OrderEvent, headers: Map<String, String>) {
         log.info(
-            "Processing order: orderId={} customerId={} amount={} {} correlationId={}",
-            event.orderId, event.customerId, event.amount, event.currency, envelope.correlationId
+            "Processing order: orderId={}, customerId={}, amount={} {}, correlationId={}",
+            order.orderId,
+            order.customerId,
+            order.amount,
+            order.currency,
+            headers["ce_correlationid"]
         )
         // TODO: implement business logic
     }
 
-    private fun isDuplicate(eventId: String): Boolean {
-        // TODO: implement idempotency check (e.g. store processed ce_id values)
+    private fun extractEnvelopeHeaders(record: ConsumerRecord<String, OrderEvent>): Map<String, String> {
+        val headers = mutableMapOf<String, String>()
+        for (header in record.headers()) {
+            if (header.key().startsWith("ce_") || header.key() == "content-type") {
+                headers[header.key()] = String(header.value(), StandardCharsets.UTF_8)
+            }
+        }
+        return headers
+    }
+
+    private fun isDuplicate(ceId: String): Boolean {
+        // TODO: implement idempotency check (e.g. against a persistent store)
         return false
     }
-
-    private fun extractEnvelope(record: ConsumerRecord<String, OrderEvent>): CloudEventEnvelope {
-        fun header(name: String): String? =
-            record.headers().lastHeader(name)?.value()?.toString(StandardCharsets.UTF_8)
-
-        return CloudEventEnvelope(
-            id = header("ce_id") ?: error("Missing required header ce_id"),
-            source = header("ce_source") ?: error("Missing required header ce_source"),
-            specversion = header("ce_specversion") ?: error("Missing required header ce_specversion"),
-            type = header("ce_type") ?: error("Missing required header ce_type"),
-            time = header("ce_time") ?: error("Missing required header ce_time"),
-            traceparent = header("ce_traceparent") ?: error("Missing required header ce_traceparent"),
-            correlationId = header("ce_correlationid"),
-            causationId = header("ce_causationid"),
-            subject = header("ce_subject"),
-            dataContentType = header("content-type"),
-        )
-    }
 }
-
-data class CloudEventEnvelope(
-    val id: String,
-    val source: String,
-    val specversion: String,
-    val type: String,
-    val time: String,
-    val traceparent: String,
-    val correlationId: String?,
-    val causationId: String?,
-    val subject: String?,
-    val dataContentType: String?,
-)
